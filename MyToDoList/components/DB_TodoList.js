@@ -59,7 +59,8 @@ export default function DB_TodoList({ navigation }) {
           const storedTodos = await getTodos(database);
 
           setDb(database);
-          setTodos(storedTodos);
+          await fetchTodos(database);
+          //setTodos(storedTodos);    //LOCAL STATE
         } catch (error) {
           console.error('DB init error:', error);
           Alert.alert('Error', 'Could not initialize the database.');
@@ -79,22 +80,33 @@ export default function DB_TodoList({ navigation }) {
   //   setTodos(prev => {
   //     const exists = prev.find(t => t.id === newTodo.id);
   //     if (exists) return prev;
-  //     return [newTodo, ...prev]; // ✅ Add new todo to top of list
+  //     return [newTodo, ...prev]; //Add new todo to top of list
   //   });
   // }, []);
 
-  // Toggle completed in DB + local state
+  const fetchTodos = async database => {
+    try {
+      const data = await getTodos(database);
+      setTodos(data);
+    } catch (e) {
+      console.error('Fetch error:', e);
+    }
+  };
+
+  // update completed in DB + local state
   const toggleComplete = async item => {
     const newStatus = !item.completed;
     try {
       if (db) {
         await updateTodoCompleted(db, item.id, newStatus); // Update in DB
       }
-      setTodos(prev =>
-        prev.map(todo =>
-          todo.id === item.id ? { ...todo, completed: newStatus } : todo,
-        ),
-      );
+      await fetchTodos(db);
+      //LOCAL STATE
+      // setTodos(prev =>
+      //   prev.map(todo =>
+      //     todo.id === item.id ? { ...todo, completed: newStatus } : todo,
+      //   ),
+      // );
     } catch (error) {
       console.error('Toggle error:', error);
       Alert.alert('Error', 'Could not update task status.');
@@ -113,7 +125,8 @@ export default function DB_TodoList({ navigation }) {
             if (db) {
               await deleteTodo(db, id); //Delete from DB
             }
-            setTodos(prev => prev.filter(todo => todo.id !== id));
+            await fetchTodos(db);
+            //setTodos(prev => prev.filter(todo => todo.id !== id));  //LOCAL STATE
           } catch (error) {
             console.error('Delete error:', error);
             Alert.alert('Error', 'Could not delete the task.');
