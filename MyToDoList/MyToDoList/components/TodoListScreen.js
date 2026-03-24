@@ -86,9 +86,9 @@ export default function TodoListScreen({ navigation, route }) {
             </Text>
 
             {/* PENDIND TO ADD */}
-            {item.datetime && (
-              <Text style={styles.todoDate}>🗓 {item.datetime}</Text>
-            )}
+            {/* {item.datetime && (
+            <Text style={styles.todoDate}>🗓 {item.datetime}</Text>
+          )} */}
           </View>
         </View>
         <MaterialCommunityIcons
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   todoDate: {
     fontSize: 12,
-    color: COLORS.beige,
+    color: '#7c3aed',
     marginTop: 4,
   },
   icons: {

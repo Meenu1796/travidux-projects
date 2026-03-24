@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,49 +6,68 @@ import {
   FlatList,
   StyleSheet,
   StatusBar,
-  Animated,
   Pressable,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector, useDispatch } from 'react-redux';
+import { toggleTodo, deleteTodo } from '../redux/ToDoSlice.js';
 import { COLORS } from '../constants/Colors';
+
+// useSelector  → reads data FROM the Redux store
+//                anytime store changes, component re-renders
+
+// useDispatch  → gives you the dispatch function
+//                used to SEND actions TO the store
+
+// toggleTodo   → action creator from ToDoSlice
+// deleteTodo   → action creator from ToDoSlice
 
 const TABS = ['All', 'Pending', 'Completed'];
 
-export default function TodoListScreen({ navigation, route }) {
-  console.log(route);
-
-  const [todos, setTodos] = useState([]);
+export default function R_TodoListScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('All');
 
-  // Refresh todos when navigating back from AddTodo
-  //   useFocusEffect(
-  //     useCallback(() => {
-  //       if (route.params?.newTodo) {
-  //         setTodos(prev => [route.params.newTodo, ...prev]);
-  //         navigation.setParams({ newTodo: null });
-  //       }
-  //     }, [route.params?.newTodo]),
-  //   );
+  // useSelector reads todos directly from Redux store.
+  // Any time the store updates, this component re-renders automatically.
+  const todos = useSelector(state => state.todos); //synchronous
 
-  console.log('todo.  out', todos);
+  // dispatch is used to send actions to the Redux store
+  // Think of it like:
+  //   dispatch = a remote control for your store
+  //   actions  = the buttons on that remote
+  //   store    = the TV that responds
+  const dispatch = useDispatch();
 
-  //check-box -> completed list
+  // sends toggleTodo action to Redux — store handles the state update
   const toggleComplete = id => {
-    setTodos(prev =>
-      prev.map(todo =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-      ),
-    );
+    dispatch(toggleTodo(id));
+  };
+  //   toggleTodo(id) creates this action:
+  // {
+  //     type: 'todos/toggleTodo',
+  //     payload: '1742387400000'
+  // }
+
+  // dispatch() sends it to the store.
+  // Reducer handles it:
+  // const todo = state.todos.find(t => t.id === payload)
+  // todo.completed = !todo.completed  ← flips true/false
+  // BEFORE dispatch:
+  //     { id: '1', title: 'Buy groceries', completed: false }
+  // AFTER dispatch:
+  //     { id: '1', title: 'Buy groceries', completed: true }
+  // useSelector detects change → FlatList re-renders
+
+  // sends deleteTodo action to Redux — store handles the state update
+  const handleDelete = id => {
+    Alert.alert('Delete?', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', onPress: () => dispatch(deleteTodo(id)) },
+    ]);
   };
 
-  //delete
-  const deleteTodo = id => {
-    setTodos(prev => prev.filter(todo => todo.id !== id));
-  };
-
-  //Flatlist- pending/completed
   const filteredTodos = todos.filter(todo => {
     if (activeTab === 'Completed') return todo.completed;
     if (activeTab === 'Pending') return !todo.completed;
@@ -66,26 +85,15 @@ export default function TodoListScreen({ navigation, route }) {
                 ? 'checkbox-marked-circle'
                 : 'checkbox-blank-circle-outline'
             }
-            onPress={() => toggleComplete(item.id)}
-            style={[
-              styles.icons,
-              // { color: item.completed ? COLORS.orange : COLORS.orange },
-            ]}
+            onPress={() => toggleComplete(item.id)} // dispatches to Redux
+            style={styles.icons}
           />
-          {/* <Pressable
-          style={[styles.checkbox, item.completed && styles.checkboxChecked]}
-          onPress={() => toggleComplete(item.id)}
-        >
-          {item.completed && <Text style={styles.checkmark}>✓</Text>}
-        </Pressable> */}
           <View style={styles.todoInfo}>
             <Text
               style={[styles.todoText, item.completed && styles.todoTextDone]}
             >
               {item.title}
             </Text>
-
-            {/* PENDIND TO ADD */}
             {item.datetime && (
               <Text style={styles.todoDate}>🗓 {item.datetime}</Text>
             )}
@@ -94,11 +102,8 @@ export default function TodoListScreen({ navigation, route }) {
         <MaterialCommunityIcons
           name="delete"
           style={styles.icons}
-          onPress={() => deleteTodo(item.id)}
+          onPress={() => handleDelete(item.id)} // dispatches to Redux
         />
-        {/* <Pressable style={styles.deleteBtn} onPress={() => deleteTodo(item.id)}>
-        <Text style={styles.deleteBtnText}>🗑</Text>
-      </Pressable> */}
       </View>
     );
   };
@@ -111,29 +116,15 @@ export default function TodoListScreen({ navigation, route }) {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>My Tasks</Text>
-          {/* <Text style={styles.headerSubtitle}>
-            {todos.length} total · {todos.filter(t => t.completed).length} done
-          </Text> */}
         </View>
         <Pressable
           style={styles.addButton}
-          onPress={() =>
-            navigation.navigate('AddTodo', {
-              addTodo: todo => {
-                setTodos(prev => {
-                  const exists = prev.find(t => t.id === todo.id);
-                  if (exists) return prev;
-                  return [todo, ...prev];
-                });
-              },
-            })
-          }
+          onPress={() => navigation.navigate('AddTodo')}
         >
           <Text style={styles.addButtonText}> Add task</Text>
         </Pressable>
       </View>
 
-      {/* Tab Bar */}
       <View style={styles.tabBar}>
         {TABS.map(tab => (
           <Pressable
@@ -165,12 +156,8 @@ export default function TodoListScreen({ navigation, route }) {
         ))}
       </View>
 
-      {/* Todo List (1) If list is empty (2) Flatlist */}
       {filteredTodos.length === 0 ? (
         <View style={styles.emptyState}>
-          {/* <Text style={styles.emptyIcon}>
-            {activeTab === 'Completed' ? '🏆' : '📋'}
-          </Text> */}
           <Text style={styles.emptyIcon}>
             {activeTab === 'Completed' ? (
               <Image
@@ -184,7 +171,6 @@ export default function TodoListScreen({ navigation, route }) {
               />
             )}
           </Text>
-
           <Text style={styles.emptyText}>
             {activeTab === 'Completed'
               ? 'No completed tasks yet'
@@ -205,6 +191,25 @@ export default function TodoListScreen({ navigation, route }) {
     </SafeAreaView>
   );
 }
+
+// User in AddTodoScreen fills form and submits
+//         ↓
+// dispatch(addTodo(newTodo))
+//         ↓
+// ToDoSlice reducer:
+// state.todos.unshift(newTodo)  ← adds to top
+//         ↓
+// Redux store updates
+//         ↓
+// persistor saves to AsyncStorage ← survives restart
+//         ↓
+// useSelector in THIS screen detects change
+//         ↓
+// todos variable updates with new array
+//         ↓
+// filteredTodos recalculates
+//         ↓
+// FlatList re-renders showing new todo at top
 
 const styles = StyleSheet.create({
   container: {
@@ -261,6 +266,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: COLORS.orange,
+    opacity: 1,
   },
   tabText: {
     fontSize: 13,
@@ -341,7 +347,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   icons: {
-    fontSize: 30, // Equivalent to 'size' prop
+    fontSize: 30,
     backgroundColor: COLORS.grey,
     padding: 10,
     color: COLORS.orange,
