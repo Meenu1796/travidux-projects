@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# Environment
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# React Native
+attendance_frontend/SmartAttendance/node_modules/
+attendance_frontend/SmartAttendance/android/.gradle/
+attendance_frontend/SmartAttendance/android/build/
+attendance_frontend/SmartAttendance/android/app/build/
+attendance_frontend/SmartAttendance/android/.cxx/
+attendance_frontend/SmartAttendance/android/local.properties
+
+attendance_frontend/SmartAttendance/ios/build/
+attendance_frontend/SmartAttendance/ios/Pods/
+
+# Android signing keys
+*.keystore
+
+# VS Code
+.vscode/
